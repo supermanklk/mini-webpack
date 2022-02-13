@@ -1,5 +1,9 @@
 # mini-webpack
-实现简单的webpack
+实现一个简单的webpack 【done】
+
+实现一个loader：处理json文件的loader 【done】
+
+实现一个plugin：
 
 
 ### 如何运行demo？

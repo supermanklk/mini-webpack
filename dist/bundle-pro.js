@@ -30,9 +30,38 @@ require(0);
 
 var _foo = require("./foo.js");
 
+var _index = require("./json/index.json");
+
+var _index2 = _interopRequireDefault(_index);
+
+var _jsonLoader = require("./loader/jsonLoader.js");
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
 (0, _foo.foo)();
-console.log("faith=============mainjs");
-        },  {"./foo.js":1}],
+console.log("faith=============mainjs"); // 当我们引入 jsonStr 的时候，如果没有一个loader处理json文件，那么在打包即执行 node index.js 的时候就会报错
+// 此刻我们要去写一个 jsonLoader 来处理json文件
+// 我们去 index.js去配置, 初始代码我们可以去官网去拿
+//
+// import { jsonLoader } from "./example/loader/jsonLoader.js";
+// let webpackConfig = {
+//   module: {
+//     rules: [
+//       {
+//         test: /\.js$/,
+//         use: jsonLoader,
+//       },
+//     ],
+//   },
+// };
+// 我们应该在什么时机去调用我们的 loader？
+// 应该在刚拿到源码的时候就去调用命中的loader
+// const source = fs.readFileSync(filePath, {
+//   encoding: "utf-8",
+// });
+
+console.log("faith=============jsonStr", _index2.default);
+        },  {"./foo.js":1,"./json/index.json":2,"./loader/jsonLoader.js":3}],
 
     '1': [function (require, module, exports) {
         "use strict";
@@ -49,9 +78,32 @@ var _bar = require("./bar.js");
 function foo() {
   console.log("faith=============");
 }
-        },  {"./bar.js":2}],
+        },  {"./bar.js":4}],
 
     '2': [function (require, module, exports) {
+        "use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = "{\n  \"age\" : 27,\n  \"name\": \"faith\"\n}";
+        },  {}],
+
+    '3': [function (require, module, exports) {
+        "use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.jsonLoader = jsonLoader;
+
+function jsonLoader(source) {
+  console.log("faith=============jsonLoaderjsonLoader");
+  return "export default " + JSON.stringify(source);
+}
+        },  {}],
+
+    '4': [function (require, module, exports) {
         "use strict";
 
 Object.defineProperty(exports, "__esModule", {

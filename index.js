@@ -3,11 +3,29 @@ import path from "path";
 import parser from "@babel/parser";
 import traverse from "@babel/traverse";
 import ejs from "ejs";
+import { jsonLoader } from "./example/loader/jsonLoader.js";
 
 // transformFromAst 将esm转化为cjm,并且使用transformFromAst必须安装 babel-preset-env
 import { transformFromAst } from "babel-core";
 
 let id = 0;
+
+let webpackConfig = {
+  module: {
+    rules: [
+      {
+        test: /\.json$/,
+        use: [jsonLoader],
+      },
+    ],
+  },
+};
+
+const loaderContext = {
+  addDeps() {
+    console.log("模拟调用webpack的api");
+  },
+};
 
 // 生成内容与依赖
 function createAsset(filePath) {
@@ -19,8 +37,27 @@ function createAsset(filePath) {
   // 安装 @babel/parser 将我们的代码转换为 ast
   // npm install @babel/traverse
   // 要获取ast内某个节点的内容,可以使用 @babel/traverse
-  const source = fs.readFileSync(filePath, {
+  let source = fs.readFileSync(filePath, {
     encoding: "utf-8",
+  });
+
+  let loaders = webpackConfig.module.rules;
+
+  loaders.forEach(({ test, use }) => {
+    if (test.test(filePath)) {
+      if (Array.isArray(use)) {
+        use.reverse();
+        use.forEach((fn) => {
+          source = fn(source);
+
+          // 如果在自己的loader调用webpack的api
+          // source.call(loaderContext, source); // call是将loaderContext传递到loader里面，loader里面的this就是loaderContext
+          // 在loader函数内部就可以使用 this.addDeps()了
+        });
+      } else {
+        source = use(source);
+      }
+    }
   });
 
   const ast = parser.parse(source, {
