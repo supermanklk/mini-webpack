@@ -4,9 +4,13 @@ import parser from "@babel/parser";
 import traverse from "@babel/traverse";
 import ejs from "ejs";
 import { jsonLoader } from "./example/loader/jsonLoader.js";
-
 // transformFromAst 将esm转化为cjm,并且使用transformFromAst必须安装 babel-preset-env
 import { transformFromAst } from "babel-core";
+
+// 引入我们自己写的plugin插件-改变打包输出的路径
+import ChangeOutputPlugin from "./example/plugin/ChangeOutputPlugin.js";
+// 事件机制-plugin是基于事件机制的
+import { SyncHook } from "tapable";
 
 let id = 0;
 
@@ -18,8 +22,26 @@ let webpackConfig = {
         use: [jsonLoader],
       },
     ],
+    // 配置我们的插件
+    plugins: [new ChangeOutputPlugin()],
   },
 };
+
+const hooks = {
+  // context入参
+  emitFile: new SyncHook(["context"]),
+};
+
+// 注册我们的插件到webpack
+function initPlugins() {
+  const plugins = webpackConfig.module.plugins;
+  plugins.forEach((plugin) => {
+    // 每个插件plugin都会实现一个apply的方法，来注册插件事件tap
+    plugin.apply(hooks);
+  });
+}
+
+initPlugins();
 
 const loaderContext = {
   addDeps() {
@@ -132,8 +154,20 @@ function build(graph) {
   // 通过ejs生成模版代码
   const code = ejs.render(templete, { data });
 
+  let outPutPath = "./dist/bundle-pro.js";
+  // 这里的context的目的是让plugin触发，在回调函数内能够改变webpack打包的行为,在tap注册事件的回调函数那里可以调 context.changeOutputPath
+  let context = {
+    changeOutputPath: function (path) {
+      outPutPath = path;
+    },
+  };
+
+  // 插件plugin【ChangeOutputPlugin】 触发事件
+  // hooks代表钩子函数
+  hooks.emitFile.call(context);
+
   // 将我们模版代码生成bundle.js文件
-  fs.writeFileSync("./dist/bundle-pro.js", code);
+  fs.writeFileSync(outPutPath, code);
 }
 
 build(graph);
